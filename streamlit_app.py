@@ -1,47 +1,69 @@
-# streamlit_app.py
-
 import streamlit as st
 import pandas as pd
-import requests
-import base64
-from io import BytesIO
+from Bio import Entrez
+import io
+import time
 
-st.set_page_config(page_title="One-Click Keyword Retriever", layout="centered")
-st.title("🚀 One-Click Keyword Retriever")
-
-uploaded = st.file_uploader("📁 Upload Excel (.xlsx) with 'DI' (DOI)", type=["xlsx"])
-
-# --- Fetch Keywords from OpenAlex ---
-def fetch_openalex_keywords(doi):
+def get_pmid_from_doi(doi, email):
+    """Query PubMed for a DOI and return the PMID."""
+    Entrez.email = email  # Set dynamically from user input
     try:
-        r = requests.get(f"https://api.openalex.org/works/doi:{doi}")
-        if r.status_code != 200:
-            return ""
-        data = r.json()
-        keywords = data.get("keywords", [])
-        return '; '.join(sorted(set(k['display_name'].strip() for k in keywords)))
-    except Exception:
-        return ""
+        handle = Entrez.esearch(db="pubmed", term=doi, field="doi")
+        record = Entrez.read(handle)
+        handle.close()
+        if record["IdList"]:
+            return record["IdList"][0]
+    except Exception as e:
+        st.warning(f"Error for DOI {doi}: {e}")
+    return None
 
-# --- Main App Flow ---
-if uploaded:
-    df = pd.read_excel(uploaded, engine='openpyxl')
+def process_dataframe(df, email):
+    """Adds a PMID column based on the DOI."""
+    pmids = []
+    for doi in df['DI']:
+        if pd.notnull(doi):
+            pmid = get_pmid_from_doi(str(doi).strip(), email)
+            pmids.append(pmid)
+            time.sleep(0.34)  # Respect NCBI rate limit
+        else:
+            pmids.append(None)
+    df['PMID'] = pmids
+    return df
 
-    if 'DI' not in df.columns:
-        st.error("❌ 'DI' column (DOI) is required.")
-    else:
-        df['OpenAlex_KW'] = ""
+# --- Streamlit UI ---
+st.title("📘 DOI to PubMed ID Converter")
 
-        if st.button("🚀 Retrieve Keywords from OpenAlex"):
-            with st.spinner("Fetching from OpenAlex..."):
-                for idx, row in df.iterrows():
-                    if pd.notna(row['DI']):
-                        df.at[idx, 'OpenAlex_KW'] = fetch_openalex_keywords(row['DI'])
+# Email input
+email = st.text_input("Enter your email (required for PubMed access):", placeholder="name@example.com")
 
-            st.success("✅ Keywords Retrieved!")
-            st.dataframe(df[['DI', 'OpenAlex_KW']].head())
+# File uploader
+uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=["xlsx"])
 
-            output = BytesIO()
-            df.to_excel(output, index=False, engine='openpyxl')
-            b64 = base64.b64encode(output.getvalue()).decode()
-            st.markdown(f'<a href="data:application/octet-stream;base64,{b64}" download="openalex_keywords.xlsx"> Download Keywords File</a>', unsafe_allow_html=True)
+if email and uploaded_file:
+    try:
+        df = pd.read_excel(uploaded_file)
+        if "DI" not in df.columns:
+            st.error("Excel file must contain a column named 'DI' for DOI.")
+        else:
+            st.info("Processing... please wait.")
+            updated_df = process_dataframe(df, email)
+
+            # Display preview
+            st.dataframe(updated_df.head())
+
+            # Convert to Excel in memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                updated_df.to_excel(writer, index=False)
+
+            st.success("✅ Processing complete!")
+            st.download_button(
+                label="📥 Download Excel with PMIDs",
+                data=output.getvalue(),
+                file_name="output_with_pmids.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
+elif uploaded_file and not email:
+    st.warning("Please enter your email address before processing.")
