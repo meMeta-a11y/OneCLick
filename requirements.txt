@@ -3,3 +3,8 @@ pandas
 openpyxl
 requests
 rapidfuzz
+streamlit>=1.35.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+biopython>=1.83
+
