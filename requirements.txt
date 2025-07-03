@@ -1,0 +1,10 @@
+streamlit
+pandas
+openpyxl
+requests
+rapidfuzz
+biopython
+beautifulsoup4
+scispacy
+spacy
+en_core_sci_sm @ https://github.com/allenai/scispacy/releases/download/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
