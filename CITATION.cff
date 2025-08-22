@@ -1,0 +1,29 @@
+# CITATION.cff
+cff-version: 1.2.0
+title: "OneCLick: Streamlined Metadata Enrichment Using Machine-Inferred Keywords from OpenAlex"
+message: "If you use this software, please cite it as below."
+type: software
+
+authors:
+  - family-names: "WEI,"
+    given-names: "Loo Keat"
+    orcid: "https://orcid.org/0000-0003-1853-0352"   
+
+version: "v1.0"
+license: "Apache-2.0"
+repository-code: "https://github.com/meMeta-a11y/OneCLick"
+url: "https://metakey.streamlit.app/"
+doi: "10.5281/zenodo.15876773"
+date-released: 2025-07-12   
+
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "WEI,"
+      given-names: "Loo Keat"
+      orcid: "https://orcid.org/0000-0003-1853-0352"
+  title: "OneCLick: Streamlined Metadata Enrichment Using Machine-Inferred Keywords from OpenAlex"
+  journal: "SoftwareX"
+  year: 2025
+  version: "v1.0"
+  doi: "10.5281/zenodo.15876773"
